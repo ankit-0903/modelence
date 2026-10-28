@@ -25,6 +25,7 @@ import { getWebsocketConfig } from './websocketConfig';
 import { getConfig } from '@/config/server';
 import { getLocalSiteUrl } from '@/config/local';
 import { issueLinkNonce } from '@/auth/session';
+import { logError } from '../telemetry';
 
 function getBodyParserMiddleware(config?: {
   json?: boolean | { limit?: string };
@@ -352,7 +353,7 @@ function handleMethodError(res: Response, methodName: string, rawError: unknown)
 
   if (error instanceof ModelenceError) {
     if (error.status >= 500 && error.status < 600) {
-      console.error(`Error calling ${methodName}:`, error);
+      logError(`Error calling ${methodName}`, { methodName, error });
     }
     // Surface a machine-readable code (when present) via a header so clients can
     // branch on the error kind without parsing the human-readable message. The
@@ -364,7 +365,7 @@ function handleMethodError(res: Response, methodName: string, rawError: unknown)
     return;
   }
 
-  console.error(`Error calling ${methodName}:`, error);
+  logError(`Error calling ${methodName}`, { methodName, error });
   res.status(500).send(error instanceof Error ? error.message : String(error));
 }
 
@@ -394,7 +395,7 @@ function toValidationError(zodError: ZodErrorLike, methodName: string): Validati
   try {
     return new ValidationError(formatZodIssues(zodError.issues) || 'Validation failed');
   } catch (parsingError) {
-    console.error(`Error parsing Zod error in ${methodName}:`, parsingError);
+    logError(`Error parsing Zod error in ${methodName}`, { methodName, error: parsingError });
     return new ValidationError('Validation failed');
   }
 }

@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 const mockAcquireLock = vi.fn();
 const mockReleaseLock = vi.fn();
 const mockLogInfo = vi.fn();
+const mockLogError = vi.fn();
 const mockFetch = vi.fn();
 const mockUpsertOne = vi.fn();
 
@@ -13,6 +14,7 @@ vi.doMock('@/lock', () => ({
 
 vi.doMock('../telemetry', () => ({
   logInfo: mockLogInfo,
+  logError: mockLogError,
 }));
 
 vi.doMock('./db', () => ({
@@ -146,7 +148,9 @@ describe('migration/index', () => {
     await Promise.resolve();
 
     expect(mockAcquireLock).toHaveBeenCalledWith('migrations');
-    expect(consoleError).toHaveBeenCalledWith('Error running migrations:', expect.any(Error));
+    expect(mockLogError).toHaveBeenCalledWith('Error running migrations', {
+      error: expect.any(Error),
+    });
 
     consoleError.mockRestore();
   });
